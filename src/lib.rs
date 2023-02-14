@@ -2,7 +2,7 @@ use xcb::{x::{self}};
 use xcb::x::{GetImageReply,Setup,ImageOrder};
 use image::{RgbaImage, Rgba};
 
-pub fn screenshot() -> xcb::Result<()> {
+pub fn screenshot() -> xcb::Result<RgbaImage> {
     let (conn, screen_num) = xcb::Connection::connect(None)?;
     
     let setup = conn.get_setup();
@@ -27,13 +27,12 @@ pub fn screenshot() -> xcb::Result<()> {
     let reply = conn
         .wait_for_reply(cookie)?;
     
-    img_from_reply(reply, setup, height as u32, width as u32);
-    Ok(())
+    Ok(img_from_reply(reply, setup, height as u32, width as u32))
 }
 
 // Assumes 24bit color like my machine
 // TODO: Test on other machines running x11 (good luck lol)
-fn img_from_reply(reply: GetImageReply, setup: &Setup, height: u32, width: u32) {
+fn img_from_reply(reply: GetImageReply, setup: &Setup, height: u32, width: u32) -> RgbaImage {
     let data = reply.data();
     let order = setup.image_byte_order();
 
@@ -44,7 +43,7 @@ fn img_from_reply(reply: GetImageReply, setup: &Setup, height: u32, width: u32) 
         let y = pixel.0 as u32 / width;
         image.put_pixel(x, y, pixel.1.clone())
     }
-    image.save("test.png").unwrap();
+    image
 }
 
 fn chunktopixel(chunk: &[u8], order: ImageOrder) -> Rgba<u8> {
